@@ -5,6 +5,8 @@ export const colors = {
   ...baseColors,
   // page-specific UI overrides
   homeBackground: 'rgba(255, 255, 255, 0.9)',
+  // accents
+  gold: '#FFD700',
 };
 
 export const spacing = {

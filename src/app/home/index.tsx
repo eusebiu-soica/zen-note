@@ -10,7 +10,7 @@ import {
   Tag
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { NoteItem } from '../../components/NoteItem';
 import { colors, spacing } from '../../styles/theme';
 import { Note } from '../../types/note';
@@ -19,6 +19,7 @@ import { StorageService } from '../../utils/storage';
 
 export default function NotesScreen() {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const loadNotes = async () => {
     const storedNotes = await StorageService.getNotes();
@@ -76,8 +77,8 @@ export default function NotesScreen() {
           <Pressable>
             <Star size={20} color="#F1F3F5" />
           </Pressable>
-          <Pressable>
-            <Grid2x2 size={20} color="#F1F3F5" />
+          <Pressable onPress={() => setViewMode(v => v === 'list' ? 'grid' : 'list')}>
+            <Grid2x2 size={20} color={viewMode === 'grid' ? colors.primary100 : '#F1F3F5'} />
           </Pressable>
         </View>
       </View>
@@ -105,12 +106,24 @@ export default function NotesScreen() {
             </View>
           </View>
         ) : (
-          // Notes List
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: spacing.lg, paddingHorizontal: spacing.sm }}>
-            {notes.map(note => (
-              <NoteItem key={note.id} note={note} />
-            ))}
-          </ScrollView>
+          // Notes List or Grid
+          viewMode === 'list' ? (
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: spacing.lg, paddingHorizontal: spacing.sm }}>
+              {notes.map(note => (
+                <NoteItem key={note.id} note={note} layout="list" />
+              ))}
+            </ScrollView>
+          ) : (
+            <FlatList
+              data={notes}
+              numColumns={2}
+              key="grid"
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingVertical: spacing.lg, paddingHorizontal: spacing.sm }}
+              columnWrapperStyle={{ justifyContent: 'space-between' }}
+              renderItem={({ item }) => <NoteItem key={item.id} note={item} layout="grid" />}
+            />
+          )
         )}
 
         {/* FAB */}

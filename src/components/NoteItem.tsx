@@ -6,9 +6,11 @@ import { Note } from "../types/note";
 
 interface NoteItemProps {
   note: Note;
+  // layout: 'list' (default) or 'grid'
+  layout?: 'list' | 'grid';
 }
 
-export function NoteItem({ note }: NoteItemProps) {
+export function NoteItem({ note, layout = 'list' }: NoteItemProps) {
   const formattedDate = new Date(note.createdAt).toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
@@ -16,11 +18,9 @@ export function NoteItem({ note }: NoteItemProps) {
   });
 
   return (
-    <Pressable
-      style={styles.container}
-      onPress={() =>
-        router.push({ pathname: "/note/[id]", params: { id: note.id } })
-      }
+    <Pressable 
+      style={[styles.container, layout === 'grid' && styles.containerGrid]}
+      onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
     >
       <View style={styles.content}>
         <View style={styles.header}>
@@ -29,7 +29,7 @@ export function NoteItem({ note }: NoteItemProps) {
               {note.title}
             </Text>
           )}
-          {note.isStarred && <Star size={16} color="#FFD700" fill="#FFD700" />}
+          {note.isStarred && <Star size={16} color={colors.gold} fill={colors.gold} />}
         </View>
         {note.content && (
           <Text style={styles.preview} numberOfLines={2}>
@@ -46,11 +46,18 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.white,
     borderRadius: radii.card,
+    // list-style card: full width with horizontal margins
     marginHorizontal: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     paddingHorizontal: spacing.horizontal,
     paddingVertical: spacing.md,
     ...shadow,
+  },
+  // grid variant: occupy roughly half width, with smaller margin
+  containerGrid: {
+    flex: 1,
+    marginHorizontal: spacing.sm,
+    marginBottom: spacing.md,
   },
   content: {
     gap: 8,
