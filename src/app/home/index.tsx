@@ -1,18 +1,42 @@
+import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
-    Grid2x2,
-    Menu,
-    Plus,
-    Search,
-    Star,
-    Tag
+  Grid2x2,
+  Menu,
+  Plus,
+  Search,
+  Star,
+  Tag
 } from 'lucide-react-native';
-import { Pressable, Text, View } from 'react-native';
-import { colors } from '../../../themes/colors';
+import React, { useState } from 'react';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { NoteItem } from '../../components/NoteItem';
+import { colors, spacing } from '../../styles/theme';
+import { Note } from '../../types/note';
+import { StorageService } from '../../utils/storage';
 
 
 export default function NotesScreen() {
-  // Hide header for this screen specifically
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  const loadNotes = async () => {
+    const storedNotes = await StorageService.getNotes();
+    // Sort by most recently updated (fallback to createdAt) so recent notes appear first
+    const sorted = [...storedNotes].sort((a, b) => {
+      const aTime = new Date(a.updatedAt || a.createdAt).getTime();
+      const bTime = new Date(b.updatedAt || b.createdAt).getTime();
+      return bTime - aTime;
+    });
+    setNotes(sorted);
+  };
+
+  // Load notes when the screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadNotes();
+    }, [])
+  );
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
       <StatusBar style="light" />
@@ -20,8 +44,8 @@ export default function NotesScreen() {
       {/* Custom Header - positioned right under status bar */}
       <View style={{
         backgroundColor: colors.primary,
-        paddingHorizontal: 16,
-        paddingVertical: 19,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
         paddingTop: 60,
         flexDirection: 'row',
         alignItems: 'center',
@@ -58,26 +82,40 @@ export default function NotesScreen() {
         </View>
       </View>
 
-      {/* Main Content */}
-      <View style={{ flex: 1, backgroundColor: '#fff' }}>
-        {/* Empty State */}
-        <View style={{ 
-          flex: 1, 
-          alignItems: 'center', 
-          justifyContent: 'center' 
-        }}>
-        <View style={{ 
-          width: 80, 
-          height: 80, 
-          opacity: 0.2 
-        }}>
-          {/* Empty state icon */}
-          <Grid2x2 size={80} color="#000" />
-        </View>
-      </View>
+  {/* Main Content */}
+  <View style={{ flex: 1, backgroundColor: colors.homeBackground }}>
+        {notes.length === 0 ? (
+          // Empty State
+          <View style={{ 
+            flex: 1, 
+            alignItems: 'center', 
+            justifyContent: 'center' 
+          }}>
+            <View style={{ 
+              width: 133, 
+              height: 100, 
+            }}>
+              <Image
+                source={require('../../../assets/images/empty-state.png')}
+                style={{ 
+                  width: 133, 
+                  height: 133 
+                }}
+              />
+            </View>
+          </View>
+        ) : (
+          // Notes List
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: spacing.lg, paddingHorizontal: spacing.sm }}>
+            {notes.map(note => (
+              <NoteItem key={note.id} note={note} />
+            ))}
+          </ScrollView>
+        )}
 
-      {/* FAB */}
+        {/* FAB */}
       <Pressable
+        onPress={() => router.push('/note/new')}
         style={{
           position: 'absolute',
           bottom: 24,
@@ -98,6 +136,6 @@ export default function NotesScreen() {
         <Plus size={24} color="#F1F3F5" />
       </Pressable>
     </View>
-        </View>
+    </View>
   );
 }
