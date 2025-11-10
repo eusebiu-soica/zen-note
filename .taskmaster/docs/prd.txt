@@ -1,0 +1,207 @@
+Core Features
+Create, edit, and delete notes.
+
+Organize notes by tags.
+
+Attach images to notes.
+
+Draw/sketch within notes.
+
+Color code notes for easy visual sorting.
+
+AI-powered suggestions for organizing notes.
+
+Search and filter notes by text, tag, or color.
+
+Cross-device syncing.
+
+App Flow & Screens
+1. Splash / Onboarding
+App branding with Taskmaster AI logo.
+
+Short walkthrough: Note creation, tags, AI features.
+
+2. Main Notes List
+Grid/list view of notes (thumbnail previews).
+
+“+” button for creating new notes.
+
+Search bar (top).
+
+Filter chips (by tag & color).
+
+Drawer/menu: Profile, Settings, Export Options.
+
+3. Note Editor
+Title and body fields (rich text supported).
+
+Add/modify tags.
+
+Attach images (camera/gallery).
+
+Drawing/sketch pad (Lucide icons toolbar).
+
+Color selection for note background.
+
+Save/delete button.
+
+AI “organize” or “suggest tags” button.
+
+4. Tag Management
+Add/edit/delete tags.
+
+Color assign to each tag.
+
+5. AI Features
+“Organize notes” page/option: Suggest merges, splits, categorization.
+
+Smart tag suggestions when editing/creating notes.
+
+AI-driven search enhancement (semantic search).
+
+6. Settings/Profile
+Theme switching (Light/Dark).
+
+Profile info, export/import data, backup options.
+
+Feedback, About, Privacy.
+
+Detailed Functional Requirements
+Notes
+Notes have: unique ID, title, body, tags (multiple), color, creation date, images, sketches.
+
+CRUD operations for notes.
+
+Undo/Redo function for editing.
+
+Tags/Colors
+Dynamic tag creation.
+
+Assign/remove tags from notes.
+
+Each note/tag can have one color from palette (Lucide-driven).
+
+Attachments
+Inline image insertion (local storage + optional cloud sync).
+
+Drawing/sketch support, saved as vector/png.
+
+AI
+Organize: Button triggers backend or local AI to suggest sorting/grouping notes.
+
+Tag Suggestion: Real-time NLP suggesting relevant tags.
+
+Enhanced search: Semantic matching beside normal text search.
+
+UI/UX
+Responsive UI for both phone/tablet.
+
+Lucide icons for toolbar actions, navigation, attachment buttons.
+
+Smooth transitions with React Native navigation.
+
+Keyboard-friendly editors.
+
+Technical Requirements
+React Native for cross-platform codebase.
+
+Lucide icon set.
+
+Redux or Context for state management.
+
+Local SQLite or Realm DB; optional backend for sync.
+
+AI inference: Local fast model or API call to server – configurable.
+
+Secure storage (GDPR, privacy compliant).
+
+Offline-first design, cloud sync as optional.
+
+Non-Functional Requirements
+Fast launch (<1s cold start).
+
+Minimal battery and RAM usage.
+
+Accessibility: Large font support, screen reader compatible.
+
+Security: Encrypted local data, secured API endpoints.
+
+Milestones & Deliverables
+Figma prototypes handed off (flow as per attached image).
+
+MVP with note CRUD, tags, color, Lucide icons UI.
+
+Add image, sketch, AI features.
+
+Sync and settings.
+
+Final QA and app store submission.
+
+This structure uses folders and key files to organize code, assets, and integrations (with space for libraries like memento/local storage, notifications, drawing, and encryption).
+
+text
+/taskmaster-ai/
+├── App.js
+├── package.json
+├── /assets/
+│   ├── /icons/          // Lucide icons, custom SVGs if needed
+│   ├── /images/         // App logos, static images
+├── /components/
+│   ├── NoteList.js
+│   ├── NoteEditor.js
+│   ├── TagManager.js
+│   ├── ColorPicker.js
+│   ├── DrawPad.js
+│   ├── AIOrganizeButton.js
+│   ├── SearchBar.js
+│   ├── FilterChips.js
+│   ├── SettingsScreen.js
+│   ├── SplashScreen.js
+├── /context/
+│   ├── NotesContext.js
+│   ├── TagsContext.js
+│   ├── SettingsContext.js
+├── /utils/
+│   ├── storage.js       // Handles local storage (memento, async-storage)
+│   ├── encryption.js    // Handles encryption/decryption
+│   ├── notification.js  // Handles notifications
+│   ├── ai.js            // AI functions (suggestions, text analysis)
+│   ├── colors.js        // Color palettes
+├── /hooks/
+│   ├── useNotes.js
+│   ├── useTags.js
+│   ├── useNotifications.js
+│   ├── useAI.js
+├── /screens/
+│   ├── MainScreen.js
+│   ├── NoteScreen.js
+│   ├── TagScreen.js
+│   ├── SettingsScreen.js
+│   ├── OnboardingScreen.js
+├── /navigation/
+│   ├── AppNavigator.js
+│   ├── DrawerNavigator.js
+├── /lib/                // external libraries, helpers, wrappers etc.
+│   ├── memento.js
+│   ├── drawing.js
+│   ├── notifications.js
+├── /types/
+│   ├── Note.js          // Note type (JS or TS)
+│   ├── Tag.js
+├── /locales/
+│   ├── en.json          // Localization files
+├── README.md
+Guidance:
+Place UI and logic for notes, tags, and organizing into /components/.
+
+Hooks in /hooks/ for accessing and manipulating notes/tags/AI features.
+
+App-wide state handled via /context/, e.g., using React Context API.
+
+Utility helpers in /utils/, organized by purpose (storage = AsyncStorage/memento, encryption, AI, etc.).
+
+Major screens in /screens/, each representing a navigation route.
+
+Custom or wrapped code from external libraries in /lib/ (drawing, notifications, etc.).
+
+Strongly consider TS (.ts/.tsx) and a /types/ folder for larger projects.
