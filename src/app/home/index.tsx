@@ -2,15 +2,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
-  Grid2x2,
-  Menu,
-  Plus,
-  Search,
-  Star,
-  Tag
+    Grid2x2,
+    Menu,
+    Plus,
+    Search,
+    Star,
+    Tag
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import AppSidebar from '../../components/AppSidebar';
 import { NoteItem } from '../../components/NoteItem';
 import { colors, spacing } from '../../styles/theme';
 import { Note } from '../../types/note';
@@ -20,6 +21,7 @@ import { StorageService } from '../../utils/storage';
 export default function NotesScreen() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const loadNotes = async () => {
     const storedNotes = await StorageService.getNotes();
@@ -54,7 +56,7 @@ export default function NotesScreen() {
       }}>
         {/* Left section */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <Pressable>
+          <Pressable onPress={() => setMenuVisible(true)}>
             <Menu size={20} color="#F1F3F5" />
           </Pressable>
           <Text style={{
@@ -148,6 +150,7 @@ export default function NotesScreen() {
       >
         <Plus size={24} color="#F1F3F5" />
       </Pressable>
+      <AppSidebar visible={menuVisible} onClose={() => setMenuVisible(false)} />
     </View>
     </View>
   );

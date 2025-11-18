@@ -1,16 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
-  ChevronLeft,
-  MoreVertical,
-  Pen,
-  Plus,
-  RotateCcw,
-  Smile,
-  Square,
-  Star,
-  Trash2,
-  Type
+    ChevronLeft,
+    MoreVertical,
+    Pen,
+    Plus,
+    RotateCcw,
+    Smile,
+    Square,
+    Star,
+    Trash2,
+    Type
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -110,7 +110,11 @@ export default function EditNote() {
           <Pressable style={styles.iconButton}>
             <Star size={20} color="#F1F3F5" />
           </Pressable>
-          <Pressable style={styles.iconButton}>
+          <Pressable style={styles.iconButton} onPress={async () => {
+            // move to recycle bin and navigate home
+            await StorageService.moveToBin(id as string);
+            router.push('/home');
+          }}>
             <Trash2 size={20} color="#F1F3F5" />
           </Pressable>
           <Pressable style={styles.iconButton}>

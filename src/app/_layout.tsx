@@ -1,17 +1,20 @@
 import { Stack } from "expo-router";
-import { HeroUINativeProvider } from 'heroui-native';
+import { HeroUINativeProvider } from '../providers/hero-ui-native/provider';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '../../global.css';
+import ThemeProvider from '../styles/ThemeProvider';
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <HeroUINativeProvider>
-        <Stack screenOptions={{
-          headerShown: false
-        }} />
-      </HeroUINativeProvider>
+      <ThemeProvider>
+        <HeroUINativeProvider>
+          <Stack screenOptions={{
+            headerShown: false
+          }} />
+        </HeroUINativeProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
