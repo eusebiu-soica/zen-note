@@ -1,20 +1,22 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
-    ChevronLeft,
-    MoreVertical,
-    Pen,
-    Plus,
-    RotateCcw,
-    Smile,
-    Square,
-    Star,
-    Trash2,
-    Type
+  CheckSquare,
+  ChevronLeft,
+  MoreVertical,
+  Palette,
+  PenLine,
+  Plus,
+  Star,
+  Trash2,
+  Type,
+  Undo2
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { RichEditor } from 'react-native-pell-rich-editor';
 import { colors } from '../../../themes/colors';
+import { TextOptionsModal } from '../../components/TextOptionsModal';
 import { Note } from '../../types/note';
 import { StorageService } from '../../utils/storage';
 
@@ -22,16 +24,66 @@ export default function EditNote() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const noteInputRef = useRef<TextInput>(null);
+  
+  // Stare pentru modalul de text options
+  const [textOptionsOpen, setTextOptionsOpen] = useState(false);
+  
+  // Stare simplă pentru a simula disponibilitatea Undo (se activează când scrii)
+  const [canUndo, setCanUndo] = useState(false);
+
+  const [textAlignment, setTextAlignment] = useState<'left' | 'center' | 'right'>('left');
+  const [textFormats, setTextFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikethrough: false,
+  });
+  const [editorReady, setEditorReady] = useState(false);
+  const richTextEditorRef = useRef<RichEditor>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // Load note data
+  const applyCommand = (action: string, formatKey?: keyof typeof textFormats, needsKeyboard: boolean = true) => {
+    if (!editorReady || !richTextEditorRef.current) return;
+    
+    if (needsKeyboard) {
+      richTextEditorRef.current.focusContentEditor();
+    }
+    
+    setTimeout(() => {
+      if (action === 'strikeThrough') {
+         const isCurrentlyActive = textFormats.strikethrough;
+        if (isCurrentlyActive) {
+           richTextEditorRef.current?.commandDOM(`(function(){ document.execCommand('strikeThrough', false, null); })()`);
+        } else {
+           richTextEditorRef.current?.commandDOM(`document.execCommand('strikeThrough', false, null)`);
+        }
+      } else {
+        // @ts-ignore
+        richTextEditorRef.current?.sendAction(action, 'result');
+      }
+      
+      if (formatKey) {
+        setTextFormats(prev => ({ ...prev, [formatKey]: !prev[formatKey] }));
+      }
+      
+      if (!needsKeyboard) {
+        setTimeout(() => {
+          richTextEditorRef.current?.blurContentEditor();
+        }, 150);
+      }
+    }, needsKeyboard ? 100 : 50);
+  };
+
   useEffect(() => {
     const loadNote = async () => {
       const note = await StorageService.getNote(id);
       if (note) {
         setTitle(note.title);
-        setContent(note.content);
+        const htmlContent = note.content.startsWith('<') ? note.content : `<p>${note.content.replace(/\n/g, '<br>')}</p>`;
+        setContent(htmlContent);
+        setTimeout(() => {
+          richTextEditorRef.current?.setContentHTML(htmlContent);
+        }, 100);
       } else {
         router.back();
       }
@@ -39,12 +91,8 @@ export default function EditNote() {
     loadNote();
   }, [id]);
 
-  // Auto save when title or content changes
   useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
       if (title.trim() || content.trim()) {
         const note: Note = {
@@ -57,13 +105,18 @@ export default function EditNote() {
         await StorageService.saveNote(note);
       }
     }, 500);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
+    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [title, content, id]);
+
+  const handleContentChange = (text: string) => {
+    setContent(text);
+    // Când conținutul se schimbă, activăm butonul Undo
+    if (!canUndo) setCanUndo(true);
+  };
+
+  // Constante pentru design
+  const iconColor = '#54585C';
+  const iconSize = 20;
 
   return (
     <KeyboardAvoidingView 
@@ -71,30 +124,10 @@ export default function EditNote() {
       style={styles.container}>
       <StatusBar style="light" />
       
-      {/* Header */}
       <View style={styles.header}>
-        {/* Left section */}
         <View style={styles.headerLeft}>
-          <Pressable onPress={() => {
-            // Clear any pending auto-save
-            if (saveTimeoutRef.current) {
-              clearTimeout(saveTimeoutRef.current);
-            }
-            // Save immediately if there's content
-            if (title.trim() || content.trim()) {
-              const note: Note = {
-                id,
-                title: title.trim(),
-                content: content.trim(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              };
-              StorageService.saveNote(note).then(() => router.back());
-            } else {
-              router.back();
-            }
-          }}>
-            <ChevronLeft size={22} color="#F1F3F5" />
+          <Pressable onPress={() => router.back()}>
+            <ChevronLeft size={24} color="#F1F3F5" />
           </Pressable>
           <TextInput
             placeholder="Title"
@@ -105,63 +138,102 @@ export default function EditNote() {
           />
         </View>
 
-        {/* Right section */}
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconButton}>
-            <Star size={20} color="#F1F3F5" />
-          </Pressable>
+          <Pressable style={styles.iconButton}><Star size={22} color="#F1F3F5" /></Pressable>
           <Pressable style={styles.iconButton} onPress={async () => {
-            // move to recycle bin and navigate home
             await StorageService.moveToBin(id as string);
             router.push('/home');
           }}>
-            <Trash2 size={20} color="#F1F3F5" />
+            <Trash2 size={22} color="#F1F3F5" />
           </Pressable>
-          <Pressable style={styles.iconButton}>
-            <Plus size={20} color="#F1F3F5" />
-          </Pressable>
-          <Pressable style={styles.iconButton}>
-            <MoreVertical size={20} color="#F1F3F5" />
-          </Pressable>
+          <Pressable style={styles.iconButton}><Plus size={22} color="#F1F3F5" /></Pressable>
+          <Pressable style={styles.iconButton}><MoreVertical size={22} color="#F1F3F5" /></Pressable>
         </View>
       </View>
 
-      {/* Main Content */}
       <View style={styles.content}>
-        <TextInput
-          ref={noteInputRef}
-          multiline
-          placeholderTextColor="#666"
-          value={content}
-          onChangeText={setContent}
-          style={styles.noteInput}
+        <RichEditor
+          ref={richTextEditorRef}
+          initialContentHTML={content || ''}
+          onChange={handleContentChange}
+          editorInitializedCallback={() => setEditorReady(true)}
+          editorStyle={{
+            contentCSSText: `font-family: 'OpenSans-Regular'; font-size: 16px; line-height: 24px; color: #333;`,
+            backgroundColor: 'transparent',
+          }}
+          style={styles.richEditor}
+          placeholder="Start typing..."
+          useContainer={false}
         />
       </View>
 
-      {/* Bottom Toolbar */}
+      {/* --- TOOLBAR REGLAT --- */}
       <View style={styles.toolbar}>
         <View style={styles.toolbarRow}>
+          
           <Pressable style={styles.toolButton}>
-            <Pen size={20} color="#666" />
+            <PenLine size={iconSize} color={iconColor} />
           </Pressable>
+
           <Pressable style={styles.toolButton}>
-            <Square size={20} color="#666" />
+            <CheckSquare size={iconSize} color={iconColor} />
           </Pressable>
+
+          {/* Butonul Text Options (Active State) */}
+          <TextOptionsModal
+            open={textOptionsOpen}
+            onOpenChange={setTextOptionsOpen}
+            trigger={
+              <Pressable 
+                style={[
+                  styles.toolButton, 
+                  textOptionsOpen && styles.activeToolButton // Aplică background gri când e deschis
+                ]}
+              >
+                <Type size={iconSize} color={iconColor} />
+              </Pressable>
+            }
+            selectedAlignment={textAlignment}
+            selectedFormats={textFormats}
+            onAlignLeft={() => { setTextAlignment('left'); applyCommand('justifyLeft', undefined, false); }}
+            onAlignCenter={() => { setTextAlignment('center'); applyCommand('justifyCenter', undefined, false); }}
+            onAlignRight={() => { setTextAlignment('right'); applyCommand('justifyRight', undefined, false); }}
+            onIndentRight={() => applyCommand('indent', undefined, false)}
+            onIndentLeft={() => applyCommand('outdent', undefined, false)}
+            onBold={() => applyCommand('bold', 'bold')}
+            onItalic={() => applyCommand('italic', 'italic')}
+            onUnderline={() => applyCommand('underline', 'underline')}
+            onStrikethrough={() => applyCommand('strikeThrough', 'strikethrough')}
+            onBulletList={() => applyCommand('unorderedList')}
+            onNumberedList={() => applyCommand('orderedList')}
+          />
+
           <Pressable style={styles.toolButton}>
-            <Type size={20} color="#666" />
+            <Palette size={iconSize} color={iconColor} />
           </Pressable>
+
           <Pressable style={styles.toolButton}>
-            <Smile size={20} color="#666" />
+            <Text style={[styles.fontSizeText, { color: iconColor }]}>16</Text>
           </Pressable>
-          <View style={styles.fontSizeContainer}>
-            <Text style={styles.fontSize}>16</Text>
-            <Text style={styles.fontSizeArrow}>▼</Text>
-          </View>
-          <Pressable style={styles.toolButton}>
-            <RotateCcw size={20} color="#666" />
+
+          {/* Buton Undo cu Logică de Culoare */}
+          <Pressable 
+            style={styles.toolButton} 
+            onPress={() => {
+              richTextEditorRef.current?.sendAction('undo', 'result')
+              // Putem dezactiva vizual undo temporar sau gestiona stiva, 
+              // dar momentan rămâne activ dacă ai scris ceva.
+            }}
+          >
+            <Undo2 
+              size={iconSize} 
+              color={canUndo ? '#54585C' : '#DADDDF'} 
+            /> 
           </Pressable>
+
         </View>
       </View>
+
     </KeyboardAvoidingView>
   );
 }
@@ -176,23 +248,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
     paddingTop: 60,
+    paddingBottom: 16,
     backgroundColor: colors.primary,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
     flex: 1,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   titleInput: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: '500',
     color: '#F1F3F5',
     flex: 1,
     padding: 0,
@@ -203,48 +276,43 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 16,
+    // borderTopLeftRadius: 24,
+    // borderTopRightRadius: 24,
+    overflow: 'hidden',
+    paddingHorizontal: 16, 
+    paddingTop: 10,
   },
-  noteInput: {
+  richEditor: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
-    textAlignVertical: 'top',
-    padding: 0,
+    minHeight: 200,
   },
   toolbar: {
     backgroundColor: '#fff',
+    paddingHorizontal: 16, // Padding lateral general al barei
+    paddingVertical: 5,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    borderTopColor: '#F1F3F5',
   },
   toolbarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 40,
+    justifyContent: 'space-between', 
   },
+  // --- STILURI BUTOANE ACTUALIZATE ---
   toolButton: {
-    padding: 8,
-  },
-  fontSizeContainer: {
-    flexDirection: 'row',
+    // Dimensiuni dinamice bazate pe padding
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8, // O rotunjire subtilă pentru când e selectat
     alignItems: 'center',
-    gap: 4,
-    padding: 8,
+    justifyContent: 'center',
   },
-  fontSize: {
+  activeToolButton: {
+    backgroundColor: '#F0F2F5', // Fundalul gri deschis când e selectat
+  },
+  fontSizeText: {
     fontSize: 16,
-    color: '#666',
-  },
-  fontSizeArrow: {
-    fontSize: 10,
-    color: '#666',
-    marginTop: 2,
+    fontWeight: '500',
   },
 });

@@ -7,3 +7,11 @@
 @import './themes/sky.css';
 
 @source './node_modules/heroui-native/lib';
+
+@theme {
+  /* Open Sans font family */
+  --font-normal: 'OpenSans-Regular';
+  --font-medium: 'OpenSans-Medium';
+  --font-semibold: 'OpenSans-SemiBold';
+  --font-bold: 'OpenSans-Bold';
+}
